@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fast Tennis - Lista de Franqueados</title>
-    <!-- Bibliotecas para ler XLSX (Google Sheets) e Exportar Excel -->
+    <title>Fast Tennis - Lista Oficial de Franqueados</title>
+    <!-- Bibliotecas para ler CSV (Google Sheets) e Exportar Excel -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <link rel="icon" type="image/png" href="favicon.png">
     <style>
@@ -132,6 +133,7 @@
         .st-fase2 { background: #DBEAFE; color: #1D4ED8; border: 1px solid #BFDBFE;}
         .st-op { background: #DCFCE7; color: #15803D; border: 1px solid #BBF7D0;}
 
+        /* AÇÃO INDIVIDUAL CLICÁVEL */
         .copyable { cursor: pointer; transition: all 0.2s; position: relative; }
         .copyable:hover { background-color: rgba(30, 70, 197, 0.1); font-weight: 600; color: var(--primary); }
 
@@ -155,8 +157,7 @@
     <header>
         <div class="brand-container">
             <div class="logo-box">
-                <div class="logo-placeholder" id="logoPlaceholder" style="display:none; font-size:30px;">🎾</div>
-                <img id="logoImg" src="logo.png" alt="Logo Fast Tennis" onerror="this.style.display='none'; document.getElementById('logoPlaceholder').style.display='block';">
+                <img id="logoImg" src="logo.png" alt="Logo Fast Tennis" onerror="this.style.display='none';">
             </div>
             <div class="header-title">
                 <h1>Fast Tennis <span class="highlight-text">• Franqueados</span></h1>
@@ -173,7 +174,7 @@
     <div class="sync-panel">
         <div class="sync-info">
             <h2><span id="sync-dot" class="status-dot"></span> <span id="sync-title">Sincronizando Banco de Dados...</span></h2>
-            <p id="sync-desc">Conectando ao Google Drive da Fast Tennis. Buscando o melhor servidor...</p>
+            <p id="sync-desc">Conectando ao Google Drive da Fast Tennis.</p>
         </div>
         <button class="btn-sync" onclick="loadGoogleSheetsData()">🔄 Atualizar Agora</button>
     </div>
@@ -249,8 +250,11 @@
 <div id="toast" class="toast">Ação realizada com sucesso!</div>
 
 <script>
-    // URL Direta para Baixar o Excel do Google Sheets
-    const RAW_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTRksu0DDNfpfwMZx6TTKNwdMR0Yf7ks3VWYV64z-5OPgiE9czUV_l1KGLDcFZC8Q/pub?output=xlsx";
+    // =========================================================================
+    // LINKS CSV DIRETOS DO GOOGLE SHEETS FORNECIDOS PELA FAST TENNIS
+    // =========================================================================
+    const URL_IMPLANTACAO = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTRksu0DDNfpfwMZx6TTKNwdMR0Yf7ks3VWYV64z-5OPgiE9czUV_l1KGLDcFZC8Q/pub?gid=1910248113&single=true&output=csv";
+    const URL_OPERACAO = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTRksu0DDNfpfwMZx6TTKNwdMR0Yf7ks3VWYV64z-5OPgiE9czUV_l1KGLDcFZC8Q/pub?gid=688782685&single=true&output=csv";
 
     let dataImp = [];
     let dataOp = [];
@@ -263,96 +267,71 @@
     };
 
     // ==========================================
-    // SISTEMA MULTI-PROXY (Garante 100% de Conexão)
+    // BUSCA AUTOMÁTICA NO GOOGLE DRIVE VIA CSV (SEM BLOQUEIO CORS!)
     // ==========================================
     async function loadGoogleSheetsData() {
         document.getElementById('sync-dot').classList.remove('online', 'error');
         document.getElementById('sync-title').innerText = "Sincronizando com o Drive...";
-        document.getElementById('sync-desc').innerText = "Conectando ao melhor servidor...";
-
-        const ts = new Date().getTime();
-        const targetUrl = `${RAW_URL}&t=${ts}`;
-        
-        // Lista de Proxies para Burlar o CORS do Google
-        const proxies = [
-            `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`,
-            `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`,
-            `https://thingproxy.freeboard.io/fetch/${targetUrl}`
-        ];
-
-        let arrayBuffer = null;
-        let proxySuccess = false;
-
-        for (let url of proxies) {
-            try {
-                const res = await fetch(url);
-                if (res.ok) {
-                    arrayBuffer = await res.arrayBuffer();
-                    proxySuccess = true;
-                    break; 
-                }
-            } catch (e) {
-                console.warn("Proxy falhou, tentando o próximo...", url);
-            }
-        }
-
-        if (!proxySuccess || !arrayBuffer) {
-            document.getElementById('sync-title').innerText = "Aviso de Conexão";
-            document.getElementById('sync-dot').classList.add('error');
-            document.getElementById('sync-desc').innerHTML = "<span style='color:#EF4444; font-weight:bold;'>Todos os servidores de download falharam. O Google pode ter bloqueado temporariamente o link. Tente atualizar a página.</span>";
-            return;
-        }
+        document.getElementById('sync-desc').innerText = "Conectando ao servidor CSV do Google Sheets...";
 
         try {
-            const workbook = XLSX.read(arrayBuffer, {type: 'array'});
+            const ts = new Date().getTime(); // Evita cache
             
-            const sheetImp = workbook.Sheets['Implantação'];
-            if (sheetImp) parseImplantacao(sheetImp);
+            const [resImp, resOp] = await Promise.all([
+                fetch(`${URL_IMPLANTACAO}&t=${ts}`),
+                fetch(`${URL_OPERACAO}&t=${ts}`)
+            ]);
+            
+            if (!resImp.ok || !resOp.ok) throw new Error("Falha ao baixar CSV");
 
-            const sheetOp = workbook.Sheets['Operação'];
-            if (sheetOp) parseOperacao(sheetOp);
+            const csvImp = await resImp.text();
+            const csvOp = await resOp.text();
 
-            finishSync();
-        } catch (error) {
-            console.error(error);
+            Papa.parse(csvImp, {
+                complete: function(results) { parseImplantacao(results.data); }
+            });
+
+            Papa.parse(csvOp, {
+                complete: function(results) { 
+                    parseOperacao(results.data); 
+                    finishSync();
+                }
+            });
+
+        } catch (err) {
+            console.error("Erro ao sincronizar:", err);
             document.getElementById('sync-title').innerText = "Erro na Leitura";
             document.getElementById('sync-dot').classList.add('error');
-            document.getElementById('sync-desc').innerText = "A planilha foi baixada, mas o formato está incorreto. Verifique a formatação do arquivo original.";
+            document.getElementById('sync-desc').innerHTML = "<span style='color:#EF4444; font-weight:bold;'>Houve um erro de rede. Tente atualizar a página.</span>";
         }
     }
 
     function finishSync() {
         document.getElementById('sync-dot').classList.add('online');
         document.getElementById('sync-dot').classList.remove('error');
-        document.getElementById('sync-title').innerText = `Banco de Dados Sincronizado!`;
+        document.getElementById('sync-title').innerText = `Banco de Dados Sincronizado e Ativo!`;
         
         let d = new Date();
         let dateStr = d.toLocaleDateString('pt-BR');
         let hr = d.getHours().toString().padStart(2, '0') + ":" + d.getMinutes().toString().padStart(2, '0');
         
-        document.getElementById('sync-desc').innerText = `Última sincronização online: Hoje às ${hr}`;
+        document.getElementById('sync-desc').innerText = `O sistema ignora os inativos. Última sincronização: Hoje às ${hr}`;
         document.getElementById('top-update-time').innerHTML = `⏱️ Atualizado: ${dateStr} às ${hr}`;
 
         document.getElementById('count-imp').textContent = dataImp.length;
         document.getElementById('count-op').textContent = dataOp.length;
         setTab('implantação');
-        showToast("✅ Base de dados atualizada e limpa!");
+        showToast("✅ Base de dados atualizada!");
     }
 
     // ==========================================
-    // PARSERS (LEITURA COM VERIFICAÇÃO DE LINHA OCULTA E TRAVAS)
+    // PARSERS (LEITURA COM TRAVAS E PREENCHIMENTO)
     // ==========================================
-    function parseImplantacao(sheet) {
+    function parseImplantacao(rows) {
         dataImp = [];
-        const rows = XLSX.utils.sheet_to_json(sheet, {header: 1, blankrows: true, defval: ""});
-        const rowInfos = sheet['!rows'] || [];
-
         let lastEstado = "", lastLocal = "", lastCidade = "", lastFase = "", lastEndereco = "";
         
-        for (let i = 2; i < rows.length; i++) {
-            // PULA A LINHA SE ELA ESTIVER OCULTA NO EXCEL DO DRIVE
-            if (rowInfos[i] && rowInfos[i].hidden) continue;
-
+        for (let i = 2; i < rows.length; i++) { // Pula o cabeçalho
             const row = rows[i];
             if (!row || row.length < 5) continue;
             
@@ -360,10 +339,10 @@
             let estado = String(row[1] || "").trim();
             let local = String(row[2] || "").trim();
             let cidade = String(row[3] || "").trim();
-            let franqueado = String(row[5] || "").trim(); 
-            let email = String(row[6] || "").trim();      
-            let telefone = String(row[7] || "").trim();   
-            let endereco = String(row[8] || "").trim();   
+            let franqueado = String(row[5] || "").trim(); // Coluna F
+            let email = String(row[6] || "").trim();      // Coluna G
+            let telefone = String(row[7] || "").trim();   // Coluna H
+            let endereco = String(row[8] || "").trim();   // Coluna I
             
             if (fase) lastFase = fase; else fase = lastFase;
             if (estado) lastEstado = estado; else estado = lastEstado;
@@ -371,7 +350,7 @@
             if (cidade) lastCidade = cidade; else cidade = lastCidade;
             if (endereco) lastEndereco = endereco; else endereco = lastEndereco;
             
-            // Trava de segurança extra (Ignorar Pausados, Cancelados e Vazios)
+            // Trava de segurança para ignorar pausados, cancelados e vazios
             let fLow = fase.toLowerCase();
             if (fLow.includes('pausado') || fLow.includes('standy') || fLow.includes('repassad') || fLow.includes('cancelad')) continue;
 
@@ -388,27 +367,21 @@
         }
     }
 
-    function parseOperacao(sheet) {
+    function parseOperacao(rows) {
         dataOp = [];
-        const rows = XLSX.utils.sheet_to_json(sheet, {header: 1, blankrows: true, defval: ""});
-        const rowInfos = sheet['!rows'] || [];
-
         let lastEstado = "", lastCidade = "", lastUnidade = "", lastEndereco = "";
         
-        for (let i = 1; i < rows.length; i++) {
-            // PULA A LINHA SE ELA ESTIVER OCULTA NO EXCEL DO DRIVE
-            if (rowInfos[i] && rowInfos[i].hidden) continue;
-
+        for (let i = 1; i < rows.length; i++) { // Pula a primeira linha
             const row = rows[i];
             if (!row || row.length < 5) continue;
             
-            let estado = String(row[0] || "").trim();     // Col A
-            let cidade = String(row[1] || "").trim();     // Col B (CIDADE NA OPERAÇÃO)
-            let unidade = String(row[2] || "").trim();    // Col C (UNIDADE NA OPERAÇÃO)
-            let franqueado = String(row[9] || "").trim(); // Col J
-            let email = String(row[11] || "").trim();     // Col L
-            let telefone = String(row[12] || "").trim();  // Col M
-            let endereco = String(row[13] || "").trim();  // Col N
+            let estado = String(row[0] || "").trim();     // Coluna A
+            let cidade = String(row[1] || "").trim();     // Coluna B
+            let unidade = String(row[2] || "").trim();    // Coluna C
+            let franqueado = String(row[9] || "").trim(); // Coluna J
+            let email = String(row[11] || "").trim();     // Coluna L
+            let telefone = String(row[12] || "").trim();  // Coluna M
+            let endereco = String(row[13] || "").trim();  // Coluna N
             
             if (estado) lastEstado = estado; else estado = lastEstado;
             if (cidade) lastCidade = cidade; else cidade = lastCidade;
@@ -422,8 +395,8 @@
             dataOp.push({
                 fase_norm: "Operação",
                 estado: lastEstado,
-                cidade: lastCidade,   
-                local: lastUnidade,   
+                cidade: lastCidade,   // Mantendo Cidade real (Col B)
+                local: lastUnidade,   // Unidade mapeada (Col C)
                 franqueado, email, telefone, endereco: lastEndereco
             });
         }
@@ -499,7 +472,7 @@
 
         const tbody = document.getElementById('table-body');
         if (currentData.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding: 30px; font-weight:bold; color:var(--text-light);">Aguardando dados ou nenhum registro encontrado.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding: 30px; font-weight:bold; color:var(--text-light);">Nenhum registro encontrado.</td></tr>`;
             return;
         }
 
@@ -519,7 +492,7 @@
                     <td class="copyable" onclick="copyText('${item.email}', 'E-mail')" title="Clique para copiar este E-mail">${item.email || '-'}</td>
                     <td class="copyable" onclick="copyText('${item.telefone}', 'Telefone')" title="Clique para copiar este Telefone">${item.telefone || '-'}</td>
                     <td style="text-align:center;">
-                        <button class="btn-copy-row" onclick="copyRow(${idx})" title="Copiar p/ Excel">📋 Copiar Linha</button>
+                        <button class="btn-copy-row" onclick="copyRow(${idx})" title="Copiar Formato do Excel">📋 Copiar Linha</button>
                     </td>
                 </tr>
             `;
