@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NPS Fast Tennis - Lista de Franqueado</title>
+    <title>Fast Tennis - Lista de Franqueados</title>
     <!-- Bibliotecas para ler XLSX (Google Sheets) e Exportar Excel -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <link rel="icon" type="image/png" href="favicon.png">
@@ -11,14 +11,14 @@
         :root {
             /* Cores Oficiais Fast Tennis */
             --primary: #1E46C5;        /* Azul Fast Tennis */
-            --secondary: #122B7A;      /* Azul Secundário/Gradiente */
+            --secondary: #122B7A;      /* Azul Secundário */
             --accent: #19F000;         /* Verde Destaque */
-            --accent-hover: #14C000;   /* Verde Escurecido p/ Hover */
-            --bg: #F4F6FA;             /* Fundo */
-            --card-bg: rgba(255, 255, 255, 0.95); /* Branco com leve transparência */
-            --text-main: #1A1A2E;      /* Texto Escuro */
-            --text-light: #5A5A72;     /* Texto Cinza (baseado no escuro) */
-            --border: #D9D9D9;         /* Cinza Claro */
+            --accent-hover: #14C000;   
+            --bg: #F4F6FA;             
+            --card-bg: rgba(255, 255, 255, 0.95); 
+            --text-main: #1A1A2E;      
+            --text-light: #5A5A72;     
+            --border: #D9D9D9;         
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
@@ -27,7 +27,7 @@
             background-color: var(--bg); 
             background-image: url('fundo.jpg'); 
             background-blend-mode: overlay;
-            background-color: rgba(244, 246, 250, 0.85);
+            background-color: rgba(244, 246, 250, 0.85); 
             color: var(--text-main); padding: 20px; 
             background-size: cover; background-attachment: fixed; background-position: center; transition: 0.5s ease-in-out;
         }
@@ -59,23 +59,25 @@
             font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 6px; border: 1px solid rgba(255,255,255,0.1);
         }
 
-        .upload-panel {
+        /* PAINEL DE SINCRONIZAÇÃO */
+        .sync-panel {
             background: #FFFFFF; padding: 24px; border-radius: 12px; margin-bottom: 24px;
-            display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;
-            border: 2px dashed var(--primary); box-shadow: 0 4px 15px rgba(30, 70, 197, 0.05); text-align: center;
+            display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;
+            border-left: 6px solid var(--accent); box-shadow: 0 4px 15px rgba(30, 70, 197, 0.05);
         }
-        .upload-panel h2 { font-size: 20px; color: var(--primary); font-weight: 800; display:flex; align-items:center; gap:8px;}
-        .upload-panel p { font-size: 14px; color: var(--text-light); }
+        .sync-info h2 { font-size: 18px; color: var(--primary); font-weight: 800; display:flex; align-items:center; gap:8px; margin-bottom: 6px;}
+        .sync-info p { font-size: 13px; color: var(--text-light); line-height: 1.4;}
         
-        .upload-btn-wrapper { position: relative; overflow: hidden; display: inline-block; margin-top: 10px;}
-        .btn-upload-file {
-            background: var(--primary); color: white; padding: 12px 24px; border-radius: 8px; font-size: 15px;
+        .status-dot { display: inline-block; width: 10px; height: 10px; background-color: #F59E0B; border-radius: 50%; animation: pulse 1.5s infinite; }
+        .status-dot.online { background-color: var(--accent); animation: none; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+
+        .btn-sync {
+            background: var(--primary); color: white; padding: 10px 20px; border-radius: 8px; font-size: 14px;
             font-weight: 700; cursor: pointer; transition: 0.2s; border: none; box-shadow: 0 4px 10px rgba(30, 70, 197, 0.2);
             display: flex; align-items: center; gap: 8px;
         }
-        .btn-upload-file:hover { background: var(--secondary); transform: translateY(-2px); box-shadow: 0 6px 15px rgba(30, 70, 197, 0.3);}
-        .upload-btn-wrapper input[type=file] { font-size: 100px; position: absolute; left: 0; top: 0; opacity: 0; cursor: pointer; }
-        .file-name-display { font-size: 13px; font-weight: bold; color: var(--accent-hover); margin-top: 5px; }
+        .btn-sync:hover { background: var(--secondary); transform: translateY(-2px); }
 
         .tabs { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
         .tab-btn {
@@ -157,25 +159,23 @@
                 <img id="logoImg" src="logo.png" alt="Logo Fast Tennis" onerror="this.style.display='none'; document.getElementById('logoPlaceholder').style.display='block';">
             </div>
             <div class="header-title">
-                <h1>Fast Tennis <span class="highlight-text">• NPS</span></h1>
-                <p>Lista de Franqueado</p>
+                <h1>Fast Tennis <span class="highlight-text">• Franqueados</span></h1>
+                <p>Lista Oficial de Franqueados</p>
             </div>
         </div>
         
         <div style="display:flex; flex-direction:column; align-items:flex-end; gap:8px;">
-            <div class="update-badge" id="top-update-time">⏱️ Aguardando Planilha...</div>
+            <div class="update-badge" id="top-update-time">⏱️ Aguardando Sync...</div>
         </div>
     </header>
 
-    <!-- UPLOAD MANUAL DA PLANILHA -->
-    <div class="upload-panel">
-        <h2 style="font-size:18px; margin-bottom:5px;">📊 Carregue a Lista de Franqueado Atualizada</h2>
-        <p style="font-size:13px;">Selecione o arquivo <strong>.xlsx</strong> do seu PC. O sistema ocultará automaticamente as linhas inativas.</p>
-        <div class="upload-btn-wrapper">
-            <button class="btn-upload-file">📁 Subir Arquivo .xlsx</button>
-            <input type="file" id="excelFileInput" accept=".xlsx, .xls" onchange="handleExcelUpload(event)">
+    <!-- SESSÃO DE SINCRONIZAÇÃO AUTOMÁTICA -->
+    <div class="sync-panel">
+        <div class="sync-info">
+            <h2><span id="sync-dot" class="status-dot"></span> <span id="sync-title">Sincronização Ao Vivo</span></h2>
+            <p id="sync-desc">Conectando ao Google Drive da Fast Tennis.</p>
         </div>
-        <div id="file-name-display" class="file-name-display"></div>
+        <button class="btn-sync" onclick="loadGoogleSheetsData()">🔄 Atualizar Agora</button>
     </div>
 
     <div class="tabs">
@@ -249,6 +249,12 @@
 <div id="toast" class="toast">Ação realizada com sucesso!</div>
 
 <script>
+    // =========================================================================
+    // URL DO EXCEL COMPLETO NO GOOGLE DRIVE (OUTPUT=XLSX PARA LER LINHAS OCULTAS)
+    // =========================================================================
+    const URL_PLANILHA_XLSX = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTRksu0DDNfpfwMZx6TTKNwdMR0Yf7ks3VWYV64z-5OPgiE9czUV_l1KGLDcFZC8Q/pub?output=xlsx";
+    // =========================================================================
+
     let dataImp = [];
     let dataOp = [];
     let currentTab = 'implantação';
@@ -256,22 +262,29 @@
     let currentData = [];
 
     window.onload = () => {
-        renderTable();
+        loadGoogleSheetsData();
     };
 
     // ==========================================
-    // PARSER DE PLANILHA LOCAL VIA JS (SEM ERRO DE CORS)
+    // BUSCA AUTOMÁTICA NO GOOGLE DRIVE VIA PROXY
     // ==========================================
-    function handleExcelUpload(event) {
-        const file = event.target.files[0];
-        if (!file) return;
+    async function loadGoogleSheetsData() {
+        document.getElementById('sync-dot').classList.remove('online');
+        document.getElementById('sync-title').innerText = "Sincronizando com o Drive...";
+        document.getElementById('sync-desc').innerText = "Baixando dados mais recentes...";
 
-        document.getElementById('file-name-display').innerText = `Processando: ${file.name}...`;
-
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            const data = new Uint8Array(e.target.result);
-            const workbook = XLSX.read(data, {type: 'array'});
+        try {
+            const ts = new Date().getTime();
+            const targetUrl = `${URL_PLANILHA_XLSX}&t=${ts}`;
+            
+            // Proxy CORS (Fundamental para puxar o XLSX de outro servidor sem erro do navegador)
+            const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`;
+            const res = await fetch(proxyUrl);
+            
+            if (!res.ok) throw new Error("Falha no download via proxy");
+            
+            const arrayBuffer = await res.arrayBuffer();
+            const workbook = XLSX.read(arrayBuffer, {type: 'array'});
 
             const sheetImp = workbook.Sheets['Implantação'];
             if (sheetImp) parseImplantacao(sheetImp);
@@ -280,22 +293,31 @@
             if (sheetOp) parseOperacao(sheetOp);
 
             finishSync();
-        };
-        reader.readAsArrayBuffer(file);
+
+        } catch (err) {
+            console.error("Erro ao sincronizar:", err);
+            document.getElementById('sync-title').innerText = "Aviso de Conexão";
+            document.getElementById('sync-dot').style.backgroundColor = "#EF4444";
+            document.getElementById('sync-desc').innerHTML = "<span style='color:#D97706;'>Erro ao acessar a planilha do Google. Tente atualizar a página.</span>";
+        }
     }
 
     function finishSync() {
+        document.getElementById('sync-dot').classList.add('online');
+        document.getElementById('sync-dot').style.backgroundColor = ""; 
+        document.getElementById('sync-title').innerText = `Banco de Dados Online e Sincronizado!`;
+        
         let d = new Date();
         let dateStr = d.toLocaleDateString('pt-BR');
         let hr = d.getHours().toString().padStart(2, '0') + ":" + d.getMinutes().toString().padStart(2, '0');
         
-        document.getElementById('top-update-time').innerHTML = `✅ Carregado: ${dateStr} às ${hr}`;
-        document.getElementById('file-name-display').innerText = `Planilha processada com sucesso!`;
+        document.getElementById('sync-desc').innerText = `Última atualização: Hoje às ${hr}`;
+        document.getElementById('top-update-time').innerHTML = `⏱️ Atualizado: ${dateStr} às ${hr}`;
 
         document.getElementById('count-imp').textContent = dataImp.length;
         document.getElementById('count-op').textContent = dataOp.length;
         setTab('implantação');
-        showToast("✅ Base de dados atualizada na tela!");
+        showToast("✅ Base de dados lida com sucesso!");
     }
 
     // ==========================================
@@ -309,7 +331,7 @@
         let lastEstado = "", lastLocal = "", lastCidade = "", lastFase = "", lastEndereco = "";
         
         for (let i = 2; i < rows.length; i++) {
-            // PULA A LINHA SE ELA ESTIVER OCULTA NO EXCEL
+            // PULA A LINHA SE ELA ESTIVER OCULTA NO EXCEL DO DRIVE
             if (rowInfos[i] && rowInfos[i].hidden) continue;
 
             const row = rows[i];
@@ -355,15 +377,15 @@
         let lastEstado = "", lastCidade = "", lastUnidade = "", lastEndereco = "";
         
         for (let i = 1; i < rows.length; i++) {
-            // PULA A LINHA SE ELA ESTIVER OCULTA NO EXCEL
+            // PULA A LINHA SE ELA ESTIVER OCULTA NO EXCEL DO DRIVE
             if (rowInfos[i] && rowInfos[i].hidden) continue;
 
             const row = rows[i];
             if (!row || row.length < 5) continue;
             
             let estado = String(row[0] || "").trim();     // Col A
-            let cidade = String(row[1] || "").trim();     // Col B
-            let unidade = String(row[2] || "").trim();    // Col C
+            let cidade = String(row[1] || "").trim();     // Col B (CIDADE)
+            let unidade = String(row[2] || "").trim();    // Col C (UNIDADE)
             let franqueado = String(row[9] || "").trim(); // Col J
             let email = String(row[11] || "").trim();     // Col L
             let telefone = String(row[12] || "").trim();  // Col M
@@ -381,8 +403,8 @@
             dataOp.push({
                 fase_norm: "Operação",
                 estado: lastEstado,
-                cidade: lastCidade,   // Ajustado para manter Cidade (Col B)
-                local: lastUnidade,   // Unidade / Local usa a Col C
+                cidade: lastCidade,   
+                local: lastUnidade,   
                 franqueado, email, telefone, endereco: lastEndereco
             });
         }
@@ -458,7 +480,7 @@
 
         const tbody = document.getElementById('table-body');
         if (currentData.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding: 30px; font-weight:bold; color:var(--text-light);">Nenhum registro encontrado. Suba a planilha acima.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding: 30px; font-weight:bold; color:var(--text-light);">Aguardando dados ou nenhum registro encontrado.</td></tr>`;
             return;
         }
 
@@ -475,10 +497,10 @@
                     <td>${item.local || '-'}</td>
                     <td>${item.cidade || '-'}</td>
                     <td><strong>${item.franqueado || '-'}</strong></td>
-                    <td>${item.email || '-'}</td>
-                    <td>${item.telefone || '-'}</td>
+                    <td class="copyable" onclick="copyText('${item.email}', 'E-mail')" title="Clique para copiar este E-mail">${item.email || '-'}</td>
+                    <td class="copyable" onclick="copyText('${item.telefone}', 'Telefone')" title="Clique para copiar este Telefone">${item.telefone || '-'}</td>
                     <td style="text-align:center;">
-                        <button class="btn-copy-row" onclick="copyRow(${idx})" title="Copiar p/ Excel">📋 Copiar</button>
+                        <button class="btn-copy-row" onclick="copyRow(${idx})" title="Copiar p/ Excel">📋 Copiar Linha</button>
                     </td>
                 </tr>
             `;
@@ -486,11 +508,21 @@
     }
 
     // ==========================================
-    // EXPORTAÇÃO XLSX & COPIAR/COLAR
+    // CÓPIAS INDIVIDUAIS POR CLIQUE NA CÉLULA
+    // ==========================================
+    function copyText(text, label) {
+        if (!text || text === '-') return;
+        navigator.clipboard.writeText(text).then(() => {
+            showToast(`✅ ${label} copiado!`);
+        });
+    }
+
+    // ==========================================
+    // EXPORTAÇÃO XLSX & COPIAR/COLAR EM MASSA
     // ==========================================
     function exportBasePesquisa() {
         if (currentData.length === 0) {
-            showToast('Nenhum dado para exportar. Suba a planilha primeiro.');
+            showToast('Nenhum dado para exportar. Aguarde a sincronização.');
             return;
         }
 
@@ -518,8 +550,8 @@
         
         let faseName = currentFase === 'all' ? 'TodasFases' : (currentFase === 'fase1' ? 'Fase1' : 'Fase2');
         let filename = currentTab === 'implantação' 
-            ? `Lista_de_Franqueado_Implantacao_${faseName}.xlsx` 
-            : `Lista_de_Franqueado_Operacao.xlsx`;
+            ? `Base_Pesquisa_Implantacao_${faseName}.xlsx` 
+            : `Base_Pesquisa_Operacao.xlsx`;
 
         XLSX.writeFile(wb, filename);
         showToast('📥 Arquivo Excel (XLSX) gerado com sucesso!');
@@ -544,7 +576,7 @@
 
     function copyData(type) {
         if (currentData.length === 0) {
-            showToast('Nenhum dado para copiar. Suba a planilha primeiro.');
+            showToast('Nenhum dado para copiar. Aguarde a sincronização.');
             return;
         }
 
