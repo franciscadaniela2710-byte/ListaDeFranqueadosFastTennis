@@ -310,7 +310,14 @@
 
         document.getElementById('count-imp').textContent = dataImp.length;
         document.getElementById('count-op').textContent = dataOp.length;
-        document.getElementById('count-tec').textContent = dataOp.length; // Usa as unidades de operação para infraestrutura
+        
+        // Calcular o número único de unidades para o contador da aba Estrutura
+        let uniqueUnits = new Set();
+        dataOp.forEach(item => {
+            uniqueUnits.add(item.cidade + "|" + item.local);
+        });
+        document.getElementById('count-tec').textContent = uniqueUnits.size; 
+
         setTab('implantação');
         showToast("✅ Base de dados atualizada!");
     }
@@ -416,7 +423,7 @@
         
         document.getElementById('fase-filters').style.display = tab === 'implantação' ? 'flex' : 'none';
         
-        // Esconde botões de exportação de NPS na aba técnica (já que o foco ali é visualizar infraestrutura)
+        // Esconde botões de exportação de NPS na aba técnica
         document.getElementById('export-btns').style.display = tab === 'tecnico' ? 'none' : 'flex';
 
         document.getElementById('search-input').value = '';
@@ -456,7 +463,7 @@
     }
 
     function renderTable() {
-        const dataset = currentTab === 'implantação' ? dataImp : dataOp; // Aba técnica usa dados de operação
+        const dataset = currentTab === 'implantação' ? dataImp : dataOp; 
         const search = document.getElementById('search-input').value.toLowerCase();
         const estado = document.getElementById('estado-select').value;
 
@@ -476,12 +483,23 @@
             return textMatch && estadoMatch && faseMatch;
         });
 
+        // FILTRO ANTI-DUPLICIDADE VISUAL PARA A ABA TÉCNICA
+        if (currentTab === 'tecnico') {
+            let uniqueTec = new Map();
+            currentData.forEach(item => {
+                let key = item.cidade + "|" + item.local; // A chave é a Unidade única
+                if (!uniqueTec.has(key)) {
+                    uniqueTec.set(key, item);
+                }
+            });
+            currentData = Array.from(uniqueTec.values());
+        }
+
         document.getElementById('list-count').textContent = currentData.length;
 
         const thead = document.getElementById('table-head');
         const tbody = document.getElementById('table-body');
 
-        // ALTERA O CABEÇALHO DINAMICAMENTE DEPENDENDO DA ABA
         if (currentTab === 'tecnico') {
             thead.innerHTML = `
                 <tr>
@@ -515,7 +533,6 @@
             return;
         }
 
-        // ALTERA AS LINHAS DEPENDENDO DA ABA
         tbody.innerHTML = currentData.map((item, idx) => {
             if (currentTab === 'tecnico') {
                 return `
@@ -554,7 +571,7 @@
     }
 
     // ==========================================
-    // CÓPIAS INDIVIDUAIS POR CLIQUE NA CÉLULA
+    // CÓPIAS INDIVIDUAIS E EXPORTAÇÃO
     // ==========================================
     function copyText(text, label) {
         if (!text || text === '-') return;
@@ -563,9 +580,6 @@
         });
     }
 
-    // ==========================================
-    // EXPORTAÇÃO XLSX & COPIAR/COLAR EM MASSA
-    // ==========================================
     function exportBasePesquisa() {
         if (currentData.length === 0) {
             showToast('Nenhum dado para exportar. Aguarde a sincronização.');
