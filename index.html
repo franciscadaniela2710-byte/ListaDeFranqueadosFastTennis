@@ -120,7 +120,7 @@
 
         .table-container { background: rgba(255, 255, 255, 0.95); border-radius: 12px; border: 1px solid var(--border); overflow-x: auto; max-height: 600px; box-shadow: 0 4px 15px rgba(0,0,0,0.05);}
         table { width: 100%; border-collapse: collapse; font-size: 13px; }
-        th { background: #F4F6FA; padding: 14px 16px; text-align: left; position: sticky; top: 0; border-bottom: 2px solid var(--border); font-size: 11px; text-transform: uppercase; z-index: 10; color: var(--primary); font-weight: 800;}
+        thead th { background: #F4F6FA; padding: 14px 16px; text-align: left; position: sticky; top: 0; border-bottom: 2px solid var(--border); font-size: 11px; text-transform: uppercase; z-index: 10; color: var(--primary); font-weight: 800;}
         td { padding: 12px 16px; border-bottom: 1px solid var(--border); }
         tr:hover { background: #EAEFFF; }
 
@@ -128,6 +128,7 @@
         .st-fase1 { background: #FFF3CD; color: #D97706; border: 1px solid #FDE68A;}
         .st-fase2 { background: #DBEAFE; color: #1D4ED8; border: 1px solid #BFDBFE;}
         .st-op { background: #DCFCE7; color: #15803D; border: 1px solid #BBF7D0;}
+        .st-tec { background: #E2E8F0; color: #475569; border: 1px solid #CBD5E1;}
 
         .copyable { cursor: pointer; transition: all 0.2s; position: relative; }
         .copyable:hover { background-color: rgba(30, 70, 197, 0.1); font-weight: 600; color: var(--primary); }
@@ -173,12 +174,16 @@
         <button class="btn-sync" onclick="loadGoogleSheetsData()">🔄 Atualizar Agora</button>
     </div>
 
+    <!-- ABAS ATUALIZADAS -->
     <div class="tabs">
         <button class="tab-btn active" onclick="setTab('implantação')" id="tab-imp">
             🚀 Implantação <span class="badge" id="count-imp">0</span>
         </button>
         <button class="tab-btn" onclick="setTab('operação')" id="tab-op">
             🎾 Operação <span class="badge" id="count-op">0</span>
+        </button>
+        <button class="tab-btn" onclick="setTab('tecnico')" id="tab-tec">
+            ⚙️ Estrutura & Datas <span class="badge" id="count-tec">0</span>
         </button>
     </div>
 
@@ -214,7 +219,7 @@
         <div style="font-size: 14px; font-weight: bold; color: var(--primary);">
             📊 Exibindo <span id="list-count" style="color: var(--primary); font-size:16px;">0</span> registros
         </div>
-        <div class="action-btns">
+        <div class="action-btns" id="export-btns">
             <button class="btn-export special" onclick="exportBasePesquisa()">📥 Baixar Base da Pesquisa (.xlsx)</button>
             <button class="btn-export outline" onclick="copyData('email')">📧 Copiar E-mails</button>
             <button class="btn-export outline" onclick="copyData('phone')">📞 Copiar Telefones</button>
@@ -224,17 +229,8 @@
 
     <div class="table-container">
         <table>
-            <thead>
-                <tr>
-                    <th>Status</th>
-                    <th>UF</th>
-                    <th>Unidade / Local</th>
-                    <th>Cidade</th>
-                    <th>Franqueado</th>
-                    <th>E-mail</th>
-                    <th>Telefone</th>
-                    <th style="text-align:center;">Ação Individual</th>
-                </tr>
+            <thead id="table-head">
+                <!-- Cabeçalho dinâmico -->
             </thead>
             <tbody id="table-body"></tbody>
         </table>
@@ -245,7 +241,7 @@
 
 <script>
     // =========================================================================
-    // LINKS CSV DIRETOS (SEM PROXY, SEM ERROS)
+    // LINKS CSV DIRETOS
     // =========================================================================
     const URL_IMPLANTACAO = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTRksu0DDNfpfwMZx6TTKNwdMR0Yf7ks3VWYV64z-5OPgiE9czUV_l1KGLDcFZC8Q/pub?gid=1910248113&single=true&output=csv";
     const URL_OPERACAO = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTRksu0DDNfpfwMZx6TTKNwdMR0Yf7ks3VWYV64z-5OPgiE9czUV_l1KGLDcFZC8Q/pub?gid=688782685&single=true&output=csv";
@@ -261,7 +257,7 @@
     };
 
     // ==========================================
-    // BUSCA AUTOMÁTICA OTIMIZADA
+    // BUSCA AUTOMÁTICA
     // ==========================================
     async function loadGoogleSheetsData() {
         document.getElementById('sync-dot').classList.remove('online', 'error');
@@ -314,12 +310,13 @@
 
         document.getElementById('count-imp').textContent = dataImp.length;
         document.getElementById('count-op').textContent = dataOp.length;
+        document.getElementById('count-tec').textContent = dataOp.length; // Usa as unidades de operação para infraestrutura
         setTab('implantação');
         showToast("✅ Base de dados atualizada!");
     }
 
     // ==========================================
-    // PARSERS (LEITURA COM TRAVAS E PREENCHIMENTO)
+    // PARSERS (LEITURA COM TRAVAS E DADOS TÉCNICOS)
     // ==========================================
     function parseImplantacao(rows) {
         dataImp = [];
@@ -356,7 +353,10 @@
             else if (fLow.includes('prospec') || fLow.includes('ponto')) faseNorm = 'Prospecção de Ponto';
             else if (fLow.includes('projet')) faseNorm = 'Projetos';
             
-            dataImp.push({ fase_norm: faseNorm, estado: lastEstado, local: lastLocal, cidade: lastCidade, franqueado, email, telefone, endereco: lastEndereco });
+            dataImp.push({ 
+                fase_norm: faseNorm, estado: lastEstado, local: lastLocal, cidade: lastCidade, 
+                franqueado, email, telefone, endereco: lastEndereco 
+            });
         }
     }
 
@@ -368,13 +368,22 @@
             const row = rows[i];
             if (!row || row.length < 5) continue;
             
-            let estado = String(row[0] || "").trim();     
-            let cidade = String(row[1] || "").trim();     
-            let unidade = String(row[2] || "").trim();    
-            let franqueado = String(row[9] || "").trim(); 
-            let email = String(row[11] || "").trim();     
-            let telefone = String(row[12] || "").trim();  
-            let endereco = String(row[13] || "").trim();  
+            let estado = String(row[0] || "").trim();     // Coluna A
+            let cidade = String(row[1] || "").trim();     // Coluna B (CIDADE)
+            let unidade = String(row[2] || "").trim();    // Coluna C (UNIDADE)
+            
+            // DADOS TÉCNICOS (COLUNAS D até I)
+            let checklist_op = String(row[3] || "").trim();    // Coluna D
+            let inauguracao = String(row[4] || "").trim();     // Coluna E
+            let quadra_saibro = String(row[5] || "").trim();   // Coluna F
+            let quadra_coberta = String(row[6] || "").trim();  // Coluna G
+            let quadra_rapida = String(row[7] || "").trim();   // Coluna H
+            let quadra_infantil = String(row[8] || "").trim(); // Coluna I
+
+            let franqueado = String(row[9] || "").trim(); // Coluna J
+            let email = String(row[11] || "").trim();     // Coluna L
+            let telefone = String(row[12] || "").trim();  // Coluna M
+            let endereco = String(row[13] || "").trim();  // Coluna N
             
             if (estado) lastEstado = estado; else estado = lastEstado;
             if (cidade) lastCidade = cidade; else cidade = lastCidade;
@@ -390,7 +399,8 @@
                 estado: lastEstado,
                 cidade: lastCidade,   
                 local: lastUnidade,   
-                franqueado, email, telefone, endereco: lastEndereco
+                franqueado, email, telefone, endereco: lastEndereco,
+                checklist_op, inauguracao, quadra_saibro, quadra_coberta, quadra_rapida, quadra_infantil
             });
         }
     }
@@ -402,8 +412,13 @@
         currentTab = tab;
         document.getElementById('tab-imp').classList.toggle('active', tab === 'implantação');
         document.getElementById('tab-op').classList.toggle('active', tab === 'operação');
+        document.getElementById('tab-tec').classList.toggle('active', tab === 'tecnico');
         
         document.getElementById('fase-filters').style.display = tab === 'implantação' ? 'flex' : 'none';
+        
+        // Esconde botões de exportação de NPS na aba técnica (já que o foco ali é visualizar infraestrutura)
+        document.getElementById('export-btns').style.display = tab === 'tecnico' ? 'none' : 'flex';
+
         document.getElementById('search-input').value = '';
         currentFase = 'all';
         updateFaseButtons();
@@ -441,7 +456,7 @@
     }
 
     function renderTable() {
-        const dataset = currentTab === 'implantação' ? dataImp : dataOp;
+        const dataset = currentTab === 'implantação' ? dataImp : dataOp; // Aba técnica usa dados de operação
         const search = document.getElementById('search-input').value.toLowerCase();
         const estado = document.getElementById('estado-select').value;
 
@@ -463,32 +478,78 @@
 
         document.getElementById('list-count').textContent = currentData.length;
 
+        const thead = document.getElementById('table-head');
         const tbody = document.getElementById('table-body');
+
+        // ALTERA O CABEÇALHO DINAMICAMENTE DEPENDENDO DA ABA
+        if (currentTab === 'tecnico') {
+            thead.innerHTML = `
+                <tr>
+                    <th>UF</th>
+                    <th>Unidade</th>
+                    <th>Checklist Op.</th>
+                    <th>Inauguração</th>
+                    <th>Saibro</th>
+                    <th>Coberta</th>
+                    <th>Rápida</th>
+                    <th>Infantil/Juvenil</th>
+                </tr>
+            `;
+        } else {
+            thead.innerHTML = `
+                <tr>
+                    <th>Status</th>
+                    <th>UF</th>
+                    <th>Unidade / Local</th>
+                    <th>Cidade</th>
+                    <th>Franqueado</th>
+                    <th>E-mail</th>
+                    <th>Telefone</th>
+                    <th style="text-align:center;">Ação Individual</th>
+                </tr>
+            `;
+        }
+
         if (currentData.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding: 30px; font-weight:bold; color:var(--text-light);">Aguardando dados ou nenhum registro encontrado.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding: 30px; font-weight:bold; color:var(--text-light);">Nenhum registro encontrado.</td></tr>`;
             return;
         }
 
+        // ALTERA AS LINHAS DEPENDENDO DA ABA
         tbody.innerHTML = currentData.map((item, idx) => {
-            let badgeClass = 'st-op';
-            if (currentTab === 'implantação') {
-                badgeClass = getFaseCategoria(item.fase_norm) === 'fase1' ? 'st-fase1' : 'st-fase2';
+            if (currentTab === 'tecnico') {
+                return `
+                    <tr>
+                        <td><strong>${item.estado || '-'}</strong></td>
+                        <td>${item.local || '-'}</td>
+                        <td><span class="status-badge st-tec">${item.checklist_op || '-'}</span></td>
+                        <td><strong>${item.inauguracao || '-'}</strong></td>
+                        <td>${item.quadra_saibro || '-'}</td>
+                        <td>${item.quadra_coberta || '-'}</td>
+                        <td>${item.quadra_rapida || '-'}</td>
+                        <td>${item.quadra_infantil || '-'}</td>
+                    </tr>
+                `;
+            } else {
+                let badgeClass = 'st-op';
+                if (currentTab === 'implantação') {
+                    badgeClass = getFaseCategoria(item.fase_norm) === 'fase1' ? 'st-fase1' : 'st-fase2';
+                }
+                return `
+                    <tr>
+                        <td><span class="status-badge ${badgeClass}">${item.fase_norm || 'Ativo'}</span></td>
+                        <td><strong>${item.estado || '-'}</strong></td>
+                        <td>${item.local || '-'}</td>
+                        <td>${item.cidade || '-'}</td>
+                        <td><strong>${item.franqueado || '-'}</strong></td>
+                        <td class="copyable" onclick="copyText('${item.email}', 'E-mail')" title="Clique para copiar este E-mail">${item.email || '-'}</td>
+                        <td class="copyable" onclick="copyText('${item.telefone}', 'Telefone')" title="Clique para copiar este Telefone">${item.telefone || '-'}</td>
+                        <td style="text-align:center;">
+                            <button class="btn-copy-row" onclick="copyRow(${idx})" title="Copiar os dados organizados em texto">📋 Copiar Dados</button>
+                        </td>
+                    </tr>
+                `;
             }
-
-            return `
-                <tr>
-                    <td><span class="status-badge ${badgeClass}">${item.fase_norm || 'Ativo'}</span></td>
-                    <td><strong>${item.estado || '-'}</strong></td>
-                    <td>${item.local || '-'}</td>
-                    <td>${item.cidade || '-'}</td>
-                    <td><strong>${item.franqueado || '-'}</strong></td>
-                    <td class="copyable" onclick="copyText('${item.email}', 'E-mail')" title="Clique para copiar este E-mail">${item.email || '-'}</td>
-                    <td class="copyable" onclick="copyText('${item.telefone}', 'Telefone')" title="Clique para copiar este Telefone">${item.telefone || '-'}</td>
-                    <td style="text-align:center;">
-                        <button class="btn-copy-row" onclick="copyRow(${idx})" title="Copiar os dados organizados em texto">📋 Copiar Dados</button>
-                    </td>
-                </tr>
-            `;
         }).join('');
     }
 
@@ -515,14 +576,13 @@
 
         if (currentTab === 'implantação') {
             let tempArray = currentData.map(d => ({
-                "Cidade": d.cidade || d.local || '', // ← CORREÇÃO DA CIDADE FASE 2 AQUI!
+                "Cidade": d.cidade || d.local || '', 
                 "Franqueado": d.franqueado || '',
                 "E-mail": d.email || '',
                 "Fase": getFaseLabel(d.fase_norm),
                 "Unidade": "onboarding"
             }));
 
-            // FILTRO ANTI-DUPLICIDADE PARA IMPLANTAÇÃO
             let uniqueMap = new Map();
             tempArray.forEach(item => {
                 let key = (item["E-mail"] || item["Franqueado"]) + "|" + item["Fase"];
@@ -532,7 +592,7 @@
             });
             exportData = Array.from(uniqueMap.values());
 
-        } else {
+        } else if (currentTab === 'operação') {
             let tempArray = currentData.map(d => ({
                 "Cidade": d.local || '', 
                 "Franqueado": d.franqueado || '',
@@ -540,7 +600,6 @@
                 "Unidade": "ongoing"
             }));
 
-            // Filtro anti-duplicidade para Operação 
             let uniqueMap = new Map();
             tempArray.forEach(item => {
                 let key = item["Cidade"] + "|" + (item["E-mail"] || item["Franqueado"]);
@@ -585,7 +644,7 @@
 
     function copyData(type) {
         if (currentData.length === 0) {
-            showToast('Nenhum dado para copiar. Aguarde a sincronização.');
+            showToast('Nenhum dado para copiar.');
             return;
         }
 
@@ -612,7 +671,7 @@
         if (lines.length > 0) {
             let joinChar = type === 'address' ? '\n\n' : '\n';
             navigator.clipboard.writeText(lines.join(joinChar)).then(() => {
-                showToast(`✅ ${lines.length} itens copiados! Use Ctrl+V no Excel.`);
+                showToast(`✅ ${lines.length} itens copiados!`);
             });
         }
     }
