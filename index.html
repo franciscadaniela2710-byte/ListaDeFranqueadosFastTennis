@@ -4,13 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Fast Tennis - Lista Oficial de Franqueados</title>
-    <!-- Bibliotecas para ler CSV (Google Sheets) e Exportar Excel -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <link rel="icon" type="image/png" href="favicon.png">
     <style>
         :root {
-            /* Cores Oficiais Fast Tennis */
             --primary: #1E46C5;        
             --secondary: #122B7A;      
             --accent: #19F000;         
@@ -59,7 +57,6 @@
             font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 6px; border: 1px solid rgba(255,255,255,0.1);
         }
 
-        /* PAINEL DE SINCRONIZAÇÃO */
         .sync-panel {
             background: #FFFFFF; padding: 24px; border-radius: 12px; margin-bottom: 24px;
             display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;
@@ -132,7 +129,6 @@
         .st-fase2 { background: #DBEAFE; color: #1D4ED8; border: 1px solid #BFDBFE;}
         .st-op { background: #DCFCE7; color: #15803D; border: 1px solid #BBF7D0;}
 
-        /* AÇÃO INDIVIDUAL CLICÁVEL */
         .copyable { cursor: pointer; transition: all 0.2s; position: relative; }
         .copyable:hover { background-color: rgba(30, 70, 197, 0.1); font-weight: 600; color: var(--primary); }
 
@@ -169,11 +165,10 @@
         </div>
     </header>
 
-    <!-- SESSÃO DE SINCRONIZAÇÃO AUTOMÁTICA -->
     <div class="sync-panel">
         <div class="sync-info">
             <h2><span id="sync-dot" class="status-dot"></span> <span id="sync-title">Sincronizando Banco de Dados...</span></h2>
-            <p id="sync-desc">Conectando ao Google Drive da Fast Tennis.</p>
+            <p id="sync-desc">Conectando ao Google Drive de forma direta e otimizada.</p>
         </div>
         <button class="btn-sync" onclick="loadGoogleSheetsData()">🔄 Atualizar Agora</button>
     </div>
@@ -250,9 +245,10 @@
 
 <script>
     // =========================================================================
-    // URL DO EXCEL COMPLETO NO GOOGLE DRIVE (OUTPUT=XLSX PARA LER LINHAS OCULTAS)
+    // LINKS CSV DIRETOS (SEM PROXY, SEM ERROS)
     // =========================================================================
-    const RAW_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTRksu0DDNfpfwMZx6TTKNwdMR0Yf7ks3VWYV64z-5OPgiE9czUV_l1KGLDcFZC8Q/pub?output=xlsx";
+    const URL_IMPLANTACAO = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTRksu0DDNfpfwMZx6TTKNwdMR0Yf7ks3VWYV64z-5OPgiE9czUV_l1KGLDcFZC8Q/pub?gid=1910248113&single=true&output=csv";
+    const URL_OPERACAO = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTRksu0DDNfpfwMZx6TTKNwdMR0Yf7ks3VWYV64z-5OPgiE9czUV_l1KGLDcFZC8Q/pub?gid=688782685&single=true&output=csv";
 
     let dataImp = [];
     let dataOp = [];
@@ -265,94 +261,71 @@
     };
 
     // ==========================================
-    // BUSCA AUTOMÁTICA NO GOOGLE DRIVE VIA MULTI-PROXY
+    // BUSCA AUTOMÁTICA OTIMIZADA
     // ==========================================
     async function loadGoogleSheetsData() {
         document.getElementById('sync-dot').classList.remove('online', 'error');
         document.getElementById('sync-title').innerText = "Sincronizando com o Drive...";
-        document.getElementById('sync-desc').innerText = "Conectando ao melhor servidor...";
-
-        const ts = new Date().getTime();
-        const targetUrl = `${RAW_URL}&t=${ts}`;
-        
-        const proxies = [
-            `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`,
-            `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`,
-            `https://thingproxy.freeboard.io/fetch/${targetUrl}`
-        ];
-
-        let arrayBuffer = null;
-        let proxySuccess = false;
-
-        for (let url of proxies) {
-            try {
-                const res = await fetch(url);
-                if (res.ok) {
-                    arrayBuffer = await res.arrayBuffer();
-                    proxySuccess = true;
-                    break; 
-                }
-            } catch (e) {
-                console.warn("Proxy falhou, tentando o próximo...", url);
-            }
-        }
-
-        if (!proxySuccess || !arrayBuffer) {
-            document.getElementById('sync-title').innerText = "Aviso de Conexão";
-            document.getElementById('sync-dot').classList.add('error');
-            document.getElementById('sync-desc').innerHTML = "<span style='color:#EF4444; font-weight:bold;'>Falha na sincronização. O Google bloqueou a conexão automática no momento. Tente atualizar a página.</span>";
-            return;
-        }
+        document.getElementById('sync-desc').innerText = "Acessando links de forma direta e segura...";
 
         try {
-            const workbook = XLSX.read(arrayBuffer, {type: 'array'});
+            const ts = new Date().getTime(); // Evita cache
             
-            const sheetImp = workbook.Sheets['Implantação'];
-            if (sheetImp) parseImplantacao(sheetImp);
+            const [resImp, resOp] = await Promise.all([
+                fetch(`${URL_IMPLANTACAO}&t=${ts}`),
+                fetch(`${URL_OPERACAO}&t=${ts}`)
+            ]);
+            
+            if (!resImp.ok || !resOp.ok) throw new Error("Falha ao baixar os dados.");
 
-            const sheetOp = workbook.Sheets['Operação'];
-            if (sheetOp) parseOperacao(sheetOp);
+            const csvImp = await resImp.text();
+            const csvOp = await resOp.text();
 
-            finishSync();
-        } catch (error) {
-            console.error(error);
-            document.getElementById('sync-title').innerText = "Erro na Leitura";
+            Papa.parse(csvImp, {
+                complete: function(results) { parseImplantacao(results.data); }
+            });
+
+            Papa.parse(csvOp, {
+                complete: function(results) { 
+                    parseOperacao(results.data); 
+                    finishSync();
+                }
+            });
+
+        } catch (err) {
+            console.error("Erro ao sincronizar:", err);
+            document.getElementById('sync-title').innerText = "Aviso de Conexão";
             document.getElementById('sync-dot').classList.add('error');
-            document.getElementById('sync-desc').innerText = "Formato de arquivo incompatível baixado pelo proxy.";
+            document.getElementById('sync-desc').innerHTML = "<span style='color:#EF4444; font-weight:bold;'>Verifique sua internet ou tente recarregar a página.</span>";
         }
     }
 
     function finishSync() {
         document.getElementById('sync-dot').classList.add('online');
         document.getElementById('sync-dot').classList.remove('error');
-        document.getElementById('sync-title').innerText = `Banco de Dados Sincronizado!`;
+        document.getElementById('sync-title').innerText = `Banco de Dados Sincronizado e Ativo!`;
         
         let d = new Date();
         let dateStr = d.toLocaleDateString('pt-BR');
         let hr = d.getHours().toString().padStart(2, '0') + ":" + d.getMinutes().toString().padStart(2, '0');
         
-        document.getElementById('sync-desc').innerText = `O sistema ignora os inativos. Última sincronização online: Hoje às ${hr}`;
+        document.getElementById('sync-desc').innerText = `Leitura leve e direta. Última sincronização: Hoje às ${hr}`;
         document.getElementById('top-update-time').innerHTML = `⏱️ Atualizado: ${dateStr} às ${hr}`;
 
         document.getElementById('count-imp').textContent = dataImp.length;
         document.getElementById('count-op').textContent = dataOp.length;
         setTab('implantação');
-        showToast("✅ Base de dados atualizada e limpa!");
+        showToast("✅ Base de dados atualizada!");
     }
 
     // ==========================================
-    // PARSERS (LEITURA COM VERIFICAÇÃO DE LINHA OCULTA E TRAVAS)
+    // PARSERS (LEITURA COM TRAVAS E PREENCHIMENTO)
     // ==========================================
-    function parseImplantacao(sheet) {
+    function parseImplantacao(rows) {
         dataImp = [];
-        const rows = XLSX.utils.sheet_to_json(sheet, {header: 1, blankrows: true, defval: ""});
-        const rowInfos = sheet['!rows'] || [];
-
         let lastEstado = "", lastLocal = "", lastCidade = "", lastFase = "", lastEndereco = "";
         
-        for (let i = 2; i < rows.length; i++) {
-            if (rowInfos[i] && rowInfos[i].hidden) continue;
-
+        for (let i = 2; i < rows.length; i++) { // Pula as 2 primeiras linhas (cabeçalho)
             const row = rows[i];
             if (!row || row.length < 5) continue;
             
@@ -360,10 +333,10 @@
             let estado = String(row[1] || "").trim();
             let local = String(row[2] || "").trim();
             let cidade = String(row[3] || "").trim();
-            let franqueado = String(row[5] || "").trim(); 
-            let email = String(row[6] || "").trim();      
-            let telefone = String(row[7] || "").trim();   
-            let endereco = String(row[8] || "").trim();   
+            let franqueado = String(row[5] || "").trim(); // Coluna F
+            let email = String(row[6] || "").trim();      // Coluna G
+            let telefone = String(row[7] || "").trim();   // Coluna H
+            let endereco = String(row[8] || "").trim();   // Coluna I
             
             if (fase) lastFase = fase; else fase = lastFase;
             if (estado) lastEstado = estado; else estado = lastEstado;
@@ -387,26 +360,21 @@
         }
     }
 
-    function parseOperacao(sheet) {
+    function parseOperacao(rows) {
         dataOp = [];
-        const rows = XLSX.utils.sheet_to_json(sheet, {header: 1, blankrows: true, defval: ""});
-        const rowInfos = sheet['!rows'] || [];
-
         let lastEstado = "", lastCidade = "", lastUnidade = "", lastEndereco = "";
         
-        for (let i = 1; i < rows.length; i++) {
-            if (rowInfos[i] && rowInfos[i].hidden) continue;
-
+        for (let i = 1; i < rows.length; i++) { // Pula a primeira linha (cabeçalho)
             const row = rows[i];
             if (!row || row.length < 5) continue;
             
-            let estado = String(row[0] || "").trim();     
-            let cidade = String(row[1] || "").trim();     
-            let unidade = String(row[2] || "").trim();    
-            let franqueado = String(row[9] || "").trim(); 
-            let email = String(row[11] || "").trim();     
-            let telefone = String(row[12] || "").trim();  
-            let endereco = String(row[13] || "").trim();  
+            let estado = String(row[0] || "").trim();     // Coluna A
+            let cidade = String(row[1] || "").trim();     // Coluna B (CIDADE)
+            let unidade = String(row[2] || "").trim();    // Coluna C (UNIDADE)
+            let franqueado = String(row[9] || "").trim(); // Coluna J
+            let email = String(row[11] || "").trim();     // Coluna L
+            let telefone = String(row[12] || "").trim();  // Coluna M
+            let endereco = String(row[13] || "").trim();  // Coluna N
             
             if (estado) lastEstado = estado; else estado = lastEstado;
             if (cidade) lastCidade = cidade; else cidade = lastCidade;
@@ -553,7 +521,6 @@
                 "Unidade": "Onboarding"
             }));
 
-            // FILTRO ANTI-DUPLICIDADE PARA IMPLANTAÇÃO
             let uniqueMap = new Map();
             tempArray.forEach(item => {
                 let key = (item["E-mail"] || item["Nome"]) + "|" + item["Fase"];
@@ -565,13 +532,12 @@
 
         } else {
             let tempArray = currentData.map(d => ({
-                "Cidade": d.local || '', // Coluna C (Nome da unidade / Local)
+                "Cidade": d.local || '',
                 "Franqueado": d.franqueado || '',
                 "E-mail": d.email || '',
                 "Unidade": "Ongoing"
             }));
 
-            // Filtro anti-duplicidade para Operação (Evitar falhas idênticas na planilha)
             let uniqueMap = new Map();
             tempArray.forEach(item => {
                 let key = item["Cidade"] + "|" + (item["E-mail"] || item["Franqueado"]);
@@ -643,7 +609,7 @@
         if (lines.length > 0) {
             let joinChar = type === 'address' ? '\n\n' : '\n';
             navigator.clipboard.writeText(lines.join(joinChar)).then(() => {
-                showToast(`✅ ${lines.length} itens copiados!`);
+                showToast(`✅ ${lines.length} itens copiados! Use Ctrl+V no Excel.`);
             });
         }
     }
