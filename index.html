@@ -269,7 +269,7 @@
         document.getElementById('sync-desc').innerText = "Acessando links de forma direta e segura...";
 
         try {
-            const ts = new Date().getTime(); // Evita cache
+            const ts = new Date().getTime(); 
             
             const [resImp, resOp] = await Promise.all([
                 fetch(`${URL_IMPLANTACAO}&t=${ts}`),
@@ -325,7 +325,7 @@
         dataImp = [];
         let lastEstado = "", lastLocal = "", lastCidade = "", lastFase = "", lastEndereco = "";
         
-        for (let i = 2; i < rows.length; i++) { // Pula as 2 primeiras linhas (cabeçalho)
+        for (let i = 2; i < rows.length; i++) { 
             const row = rows[i];
             if (!row || row.length < 5) continue;
             
@@ -333,10 +333,10 @@
             let estado = String(row[1] || "").trim();
             let local = String(row[2] || "").trim();
             let cidade = String(row[3] || "").trim();
-            let franqueado = String(row[5] || "").trim(); // Coluna F
-            let email = String(row[6] || "").trim();      // Coluna G
-            let telefone = String(row[7] || "").trim();   // Coluna H
-            let endereco = String(row[8] || "").trim();   // Coluna I
+            let franqueado = String(row[5] || "").trim(); 
+            let email = String(row[6] || "").trim();      
+            let telefone = String(row[7] || "").trim();   
+            let endereco = String(row[8] || "").trim();   
             
             if (fase) lastFase = fase; else fase = lastFase;
             if (estado) lastEstado = estado; else estado = lastEstado;
@@ -364,17 +364,17 @@
         dataOp = [];
         let lastEstado = "", lastCidade = "", lastUnidade = "", lastEndereco = "";
         
-        for (let i = 1; i < rows.length; i++) { // Pula a primeira linha (cabeçalho)
+        for (let i = 1; i < rows.length; i++) { 
             const row = rows[i];
             if (!row || row.length < 5) continue;
             
-            let estado = String(row[0] || "").trim();     // Coluna A
-            let cidade = String(row[1] || "").trim();     // Coluna B (CIDADE)
-            let unidade = String(row[2] || "").trim();    // Coluna C (UNIDADE)
-            let franqueado = String(row[9] || "").trim(); // Coluna J
-            let email = String(row[11] || "").trim();     // Coluna L
-            let telefone = String(row[12] || "").trim();  // Coluna M
-            let endereco = String(row[13] || "").trim();  // Coluna N
+            let estado = String(row[0] || "").trim();     
+            let cidade = String(row[1] || "").trim();     
+            let unidade = String(row[2] || "").trim();    
+            let franqueado = String(row[9] || "").trim(); 
+            let email = String(row[11] || "").trim();     
+            let telefone = String(row[12] || "").trim();  
+            let endereco = String(row[13] || "").trim();  
             
             if (estado) lastEstado = estado; else estado = lastEstado;
             if (cidade) lastCidade = cidade; else cidade = lastCidade;
@@ -515,15 +515,17 @@
 
         if (currentTab === 'implantação') {
             let tempArray = currentData.map(d => ({
-                "Nome": d.franqueado || '',
+                "Cidade": d.cidade || '',
+                "Franqueado": d.franqueado || '',
                 "E-mail": d.email || '',
                 "Fase": getFaseLabel(d.fase_norm),
-                "Unidade": "Onboarding"
+                "Unidade": "onboarding"
             }));
 
+            // FILTRO ANTI-DUPLICIDADE PARA IMPLANTAÇÃO
             let uniqueMap = new Map();
             tempArray.forEach(item => {
-                let key = (item["E-mail"] || item["Nome"]) + "|" + item["Fase"];
+                let key = (item["E-mail"] || item["Franqueado"]) + "|" + item["Fase"];
                 if (!uniqueMap.has(key)) {
                     uniqueMap.set(key, item);
                 }
@@ -532,12 +534,13 @@
 
         } else {
             let tempArray = currentData.map(d => ({
-                "Cidade": d.local || '',
+                "Cidade": d.local || '', 
                 "Franqueado": d.franqueado || '',
                 "E-mail": d.email || '',
-                "Unidade": "Ongoing"
+                "Unidade": "ongoing"
             }));
 
+            // Filtro anti-duplicidade para Operação 
             let uniqueMap = new Map();
             tempArray.forEach(item => {
                 let key = item["Cidade"] + "|" + (item["E-mail"] || item["Franqueado"]);
