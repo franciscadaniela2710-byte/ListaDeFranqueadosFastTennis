@@ -546,19 +546,40 @@
         let exportData = [];
 
         if (currentTab === 'implantação') {
-            exportData = currentData.map(d => ({
+            let tempArray = currentData.map(d => ({
                 "Nome": d.franqueado || '',
                 "E-mail": d.email || '',
                 "Fase": getFaseLabel(d.fase_norm),
                 "Unidade": "Onboarding"
             }));
+
+            // FILTRO ANTI-DUPLICIDADE PARA IMPLANTAÇÃO
+            let uniqueMap = new Map();
+            tempArray.forEach(item => {
+                let key = (item["E-mail"] || item["Nome"]) + "|" + item["Fase"];
+                if (!uniqueMap.has(key)) {
+                    uniqueMap.set(key, item);
+                }
+            });
+            exportData = Array.from(uniqueMap.values());
+
         } else {
-            exportData = currentData.map(d => ({
-                "Cidade": d.local || '', 
+            let tempArray = currentData.map(d => ({
+                "Cidade": d.local || '', // Coluna C (Nome da unidade / Local)
                 "Franqueado": d.franqueado || '',
                 "E-mail": d.email || '',
                 "Unidade": "Ongoing"
             }));
+
+            // Filtro anti-duplicidade para Operação (Evitar falhas idênticas na planilha)
+            let uniqueMap = new Map();
+            tempArray.forEach(item => {
+                let key = item["Cidade"] + "|" + (item["E-mail"] || item["Franqueado"]);
+                if (!uniqueMap.has(key)) {
+                    uniqueMap.set(key, item);
+                }
+            });
+            exportData = Array.from(uniqueMap.values());
         }
 
         const ws = XLSX.utils.json_to_sheet(exportData);
@@ -571,7 +592,7 @@
             : `Base_Pesquisa_Operacao.xlsx`;
 
         XLSX.writeFile(wb, filename);
-        showToast('📥 Arquivo Excel (XLSX) gerado com sucesso!');
+        showToast('📥 Arquivo Excel (XLSX) gerado com sucesso! Filtro anti-duplicidade aplicado.');
     }
 
     function copyRow(idx) {
@@ -622,7 +643,7 @@
         if (lines.length > 0) {
             let joinChar = type === 'address' ? '\n\n' : '\n';
             navigator.clipboard.writeText(lines.join(joinChar)).then(() => {
-                showToast(`✅ ${lines.length} itens copiados! Use Ctrl+V no Excel.`);
+                showToast(`✅ ${lines.length} itens copiados!`);
             });
         }
     }
