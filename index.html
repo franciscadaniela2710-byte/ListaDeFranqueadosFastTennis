@@ -515,7 +515,7 @@
 
         if (currentTab === 'implantação') {
             let tempArray = currentData.map(d => ({
-                "Cidade": d.cidade || '',
+                "Cidade": d.cidade || d.local || '', // ← CORREÇÃO DA CIDADE FASE 2 AQUI!
                 "Franqueado": d.franqueado || '',
                 "E-mail": d.email || '',
                 "Fase": getFaseLabel(d.fase_norm),
@@ -569,7 +569,7 @@
         let text = "";
 
         if (currentTab === 'implantação') {
-            text = `👤 Franqueado: ${d.franqueado || '-'}\n🏙️ Cidade/Local: ${d.cidade || '-'}\n📞 Telefone: ${d.telefone || '-'}\n📧 E-mail: ${d.email || '-'}`;
+            text = `👤 Franqueado: ${d.franqueado || '-'}\n🏙️ Cidade/Local: ${d.cidade || d.local || '-'}\n📞 Telefone: ${d.telefone || '-'}\n📧 E-mail: ${d.email || '-'}`;
         } else {
             let localName = d.local || '-';
             if (localName !== '-' && !localName.toLowerCase().includes('fast tennis')) {
